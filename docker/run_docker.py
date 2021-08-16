@@ -28,7 +28,7 @@ from docker import types
 #### USER CONFIGURATION ####
 
 # Set to target of scripts/download_all_databases.sh
-DOWNLOAD_DIR = 'SET ME'
+DOWNLOAD_DIR = '/srv/dbs'
 
 # Name of the AlphaFold Docker image.
 docker_image_name = 'alphafold'
