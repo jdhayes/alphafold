@@ -50,14 +50,15 @@ git clone https://github.com/jdhayes/alphafold.git /app/alphafold
 # Set perms so normal users can run
 chmod a+rx /app/alphafold/run_alphafold.py
 
-# Compile HHsuite from source.
+# Compile HHsuite from source
+rm -rf /tmp/hh-suite && \
 git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
 && mkdir /tmp/hh-suite/build \
-&& pushd /tmp/hh-suite/build \
+&& cd /tmp/hh-suite/build \
 && cmake -DCMAKE_INSTALL_PREFIX=/opt/hhsuite .. \
 && make -j 4 && make install \
 && ln -s /opt/hhsuite/bin/* /usr/bin \
-&& popd \
+&& cd \
 && rm -rf /tmp/hh-suite
 
 # Install Miniconda package manger.
