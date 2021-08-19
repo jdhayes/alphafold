@@ -90,6 +90,7 @@ https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c49412
 
 # Install pip packages.
 pip3 install --upgrade pip \
+&& pip3 install ipykernel \
 && pip3 install -r /app/alphafold/requirements.txt \
 && pip3 install --upgrade jax jaxlib==0.1.69+cuda110 -f \
 https://storage.googleapis.com/jax-releases/jax_releases.html
