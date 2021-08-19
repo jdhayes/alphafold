@@ -1,0 +1,13 @@
+{
+ "language": "python",
+ "argv": ["/path/to/singularity/binary/singularity",
+   "exec",
+   "/path/to/singularity/image/alphafold.sif",
+   "/opt/conda/bin/python",
+   "-m",
+   "ipykernel",
+   "-f",
+   "{connection_file}"
+ ],
+ "display_name": "AlphaFold (2.0.0)"
+}
