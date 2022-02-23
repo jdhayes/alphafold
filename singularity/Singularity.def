@@ -11,21 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# WARNING ARG is not supported for Singularity, and must be defined with a default to be parsed. Skipping CUDA
 
 Bootstrap: docker
-From: nvidia/cuda:11.0-cudnn8-runtime-ubuntu18.04
+From: nvidia/cuda:11.1-cudnn8-runtime-ubuntu18.04
 Stage: spython-base
 
 # Dont copy individual files, use git
 #%files
-#openmm.patch /app/alphafold/docker/openmm.patch
-#requirements.txt /app/alphafold/requirements.txt
-#../run_alphafold.py /app/alphafold/run_alphafold.py
+#. /app/alphafold
 
 %post
-CUDA=11.0
+# No longer available, use cudatools-dev instead, but also installs cuda 11.2?
+CUDA=11.1
+# This fails
+#CUDA=11.2
 # FROM directive resets ARGS, so we specify again (the value is retained if
 # previously set).
 
@@ -35,7 +34,7 @@ CUDA=11.0
 apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 build-essential \
 cmake \
-cuda-command-line-tools-11-0 \
+cuda-command-line-tools-$(echo $CUDA | tr '.' '-') \
 git \
 hmmer \
 kalign \
@@ -50,8 +49,8 @@ git clone https://github.com/jdhayes/alphafold.git /app/alphafold
 # Set perms so normal users can run
 chmod a+rx /app/alphafold/run_alphafold.py
 
-# Compile HHsuite from source
-rm -rf /tmp/hh-suite && \
+# Compile HHsuite from source.
+rm -rf /tmp/hh-suite
 git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-suite \
 && mkdir /tmp/hh-suite/build \
 && cd /tmp/hh-suite/build \
@@ -61,26 +60,22 @@ git clone --branch v3.3.0 https://github.com/soedinglab/hh-suite.git /tmp/hh-sui
 && cd \
 && rm -rf /tmp/hh-suite
 
-# Install Miniconda package manger.
+# Install Miniconda package manager.
 wget -q -P /tmp \
 https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
 && bash /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda \
 && rm /tmp/Miniconda3-latest-Linux-x86_64.sh
 
 # Conda init
-#PATH="/opt/conda/bin:$PATH"
-#echo /opt/conda/bin/conda shell.bash hook > /etc/profile.d/conda.sh
-#chmod 644 /etc/profile.d/conda.sh
-#. /etc/profile.d/conda.sh
-#eval $(/opt/conda/bin/conda shell.bash hook)
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
 # Install conda packages.
+PATH="/opt/conda/bin:$PATH"
 conda update -qy conda \
 && conda install -y -c conda-forge \
 openmm=7.5.1 \
-cudatoolkit=11.0 \
+cudatoolkit-dev==${CUDA}.1 \
 pdbfixer \
 pip \
 python=3.7
@@ -90,9 +85,8 @@ https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c49412
 
 # Install pip packages.
 pip3 install --upgrade pip \
-&& pip3 install ipykernel \
 && pip3 install -r /app/alphafold/requirements.txt \
-&& pip3 install --upgrade jax jaxlib==0.1.69+cuda110 -f \
+&& pip3 install --upgrade jax==0.2.14 jaxlib==0.1.69+cuda$(echo $CUDA | tr -d '.') -f \
 https://storage.googleapis.com/jax-releases/jax_releases.html
 
 # Apply OpenMM patch.
@@ -102,7 +96,9 @@ patch -p0 < /app/alphafold/docker/openmm.patch
 # Install alphafold
 cd /app/alphafold
 python setup.py install
-# DO WE STILL NEED TO INSTALL "tree"?
+
+# Add SETUID bit to the ldconfig binary so that non-root users can run it.
+#chmod u+s /sbin/ldconfig.real
 
 # We need to run `ldconfig` first to ensure GPUs are visible, due to some quirk
 # with Debian. See https://github.com/NVIDIA/nvidia-docker/issues/1399 for
